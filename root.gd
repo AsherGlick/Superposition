@@ -52,69 +52,28 @@ const tile_types = {
 const ignored_characters = ["A", " "]
 
 
-func get_targeted_tile(event, layer=0):
-	var camera = $camera_origin/camera_pitch/camera
-	var start_coordinate = camera.project_ray_origin(event.position)
-	var direction = camera.project_ray_normal(event.position)
-	# var end_coordinate = start_coordinate + camera.project_ray_normal(event.position) * ray_length
-	# var space_state = get_world().direct_space_state
-	# var result = space_state.intersect_ray(start_coordinate, end_coordinate)
+func _ready():
+	if Network.connect("player_connected", self, "_on_Network_player_connected") != OK:
+		print("Failed to connect \"player_connected\"")
 
-	var x1 = float(start_coordinate.x)
-	var y1 = float(start_coordinate.y)
-	var z1 = float(start_coordinate.z)
-	var x2 = float(direction.x)
-	var y2 = float(direction.y)
-	var z2 = float(direction.z)
+	if Network.connect("disconnected_from_dm", self, "_on_Network_disconnected_from_dm") != OK:
+		print("Failed to connect \"disconnected_from_dm\"")
 
-	if (x2 != 0 && y2 != 0 && z2 != 0):
+	for i in range(len(models)):
+		$menu/center/panel/style.add_item(models[i][0], i)
 
-		var x_slope = y2/x2
-		var z_slope = y2/z2
-		var x_at_zero = layer-(y1-x_slope*x1) / x_slope
-		var z_at_zero = layer-(y1-z_slope*z1) / z_slope
-
-		return Vector3(x_at_zero, layer, z_at_zero)
-
-	else:
-		print("Caught a div by zero in tile lookup")
-
-
-	return null
-
-
-func deselect_object():
-
-	selected_object.set_object_deselected()
-
-	# var surface_material = selected_object.get_node("mesh").get_surface_material(0)
-	# surface_material.set_shader_param("enable", false)
-	# surface_material.next_pass.set_shader_param("enable", false)
-
-	selected_object = null
-
-	$submenu/panel/hbox/delete.disabled = true
-
-func select_object(object):
-
-	object.set_object_selected()
-
-
-	# var surface_material = object.get_node("mesh").get_surface_material(0)
-	# surface_material.set_shader_param("enable", true)
-	# surface_material.next_pass.set_shader_param("enable", true)
-
-
-	selected_object = object
-	$submenu/panel/hbox/delete.disabled = false
+	if get_tree().is_network_server():
+		$submenu/panel/hbox/share.show()
+		$submenu/panel/hbox/unhide.show()
+		$MapControls.show()
 
 
 func _input(event):
 	if over_menubar || menu_open:
 		return
+
 	if event is InputEventMouseButton:
 		if event.pressed:
-
 			if event.button_index == BUTTON_WHEEL_UP:
 				$camera_origin/camera_pitch/camera.translation.z -= zoom_speed
 				if ($camera_origin/camera_pitch/camera.translation.z < 0):
@@ -152,7 +111,6 @@ func _input(event):
 						else:
 							pass
 							# print("Hit not found")
-
 		else:
 			if event.button_index == BUTTON_RIGHT:
 				pressed = false
@@ -173,32 +131,6 @@ func _input(event):
 			$camera_origin/camera_pitch.rotate_object_local(Vector3(1,0,0), x_rotate_distance)
 
 	# velocity = Vector2(1, 0).rotated(rotation) * run_speed
-
-
-remotesync func ping_NETWORK(position):
-	var ping = load("res://ping.tscn").instance()
-	ping.translation.x = position.x
-	ping.translation.z = position.z
-
-	ping.rotation.y = rand_range(0,2*PI)
-
-	self.add_child(ping)
-
-
-func _ready():
-	if Network.connect("player_connected", self, "_on_Network_player_connected") != OK:
-		print("Failed to connect \"player_connected\"")
-
-	if Network.connect("disconnected_from_dm", self, "_on_Network_disconnected_from_dm") != OK:
-		print("Failed to connect \"disconnected_from_dm\"")
-
-	for i in range(len(models)):
-		$menu/center/panel/style.add_item(models[i][0], i)
-
-	if get_tree().is_network_server():
-		$submenu/panel/hbox/share.show()
-		$submenu/panel/hbox/unhide.show()
-		$MapControls.show()
 
 
 func _process(delta):
@@ -240,9 +172,6 @@ func _process(delta):
 		else:
 			$submenu/panel/hbox/unhide.disabled = true
 
-
-
-
 		var should_disable_share_button = true
 
 		if full_tile != null:
@@ -251,6 +180,68 @@ func _process(delta):
 					should_disable_share_button = false
 
 		$submenu/panel/hbox/share.disabled = should_disable_share_button
+
+
+func get_targeted_tile(event, layer=0):
+	var camera = $camera_origin/camera_pitch/camera
+	var start_coordinate = camera.project_ray_origin(event.position)
+	var direction = camera.project_ray_normal(event.position)
+	# var end_coordinate = start_coordinate + camera.project_ray_normal(event.position) * ray_length
+	# var space_state = get_world().direct_space_state
+	# var result = space_state.intersect_ray(start_coordinate, end_coordinate)
+
+	var x1 = float(start_coordinate.x)
+	var y1 = float(start_coordinate.y)
+	var z1 = float(start_coordinate.z)
+	var x2 = float(direction.x)
+	var y2 = float(direction.y)
+	var z2 = float(direction.z)
+
+	if (x2 != 0 && y2 != 0 && z2 != 0):
+
+		var x_slope = y2/x2
+		var z_slope = y2/z2
+		var x_at_zero = layer-(y1-x_slope*x1) / x_slope
+		var z_at_zero = layer-(y1-z_slope*z1) / z_slope
+
+		return Vector3(x_at_zero, layer, z_at_zero)
+
+	else:
+		print("Caught a div by zero in tile lookup")
+
+	return null
+
+
+func deselect_object():
+	selected_object.set_object_deselected()
+
+	# var surface_material = selected_object.get_node("mesh").get_surface_material(0)
+	# surface_material.set_shader_param("enable", false)
+	# surface_material.next_pass.set_shader_param("enable", false)
+
+	selected_object = null
+	$submenu/panel/hbox/delete.disabled = true
+
+
+func select_object(object):
+	object.set_object_selected()
+
+	# var surface_material = object.get_node("mesh").get_surface_material(0)
+	# surface_material.set_shader_param("enable", true)
+	# surface_material.next_pass.set_shader_param("enable", true)
+
+	selected_object = object
+	$submenu/panel/hbox/delete.disabled = false
+
+
+remotesync func ping_NETWORK(position):
+	var ping = load("res://ping.tscn").instance()
+	ping.translation.x = position.x
+	ping.translation.z = position.z
+
+	ping.rotation.y = rand_range(0,2*PI)
+
+	self.add_child(ping)
 
 
 func share_room(room_index):

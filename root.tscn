@@ -68,7 +68,6 @@ __meta__ = {
 }
 
 [node name="ip_address" type="LineEdit" parent="submenu/panel/hbox"]
-visible = false
 margin_left = 684.0
 margin_right = 1024.0
 margin_bottom = 48.0

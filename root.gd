@@ -186,9 +186,14 @@ remotesync func ping_NETWORK(position):
 
 
 func _ready():
+	if Network.connect("player_connected", self, "_on_Network_player_connected") != OK:
+		print("Failed to connect \"player_connected\"")
+
+	if Network.connect("disconnected_from_dm", self, "_on_Network_disconnected_from_dm") != OK:
+		print("Failed to connect \"disconnected_from_dm\"")
+
 	if OS.has_feature("dungeon_master") or OS.has_feature("editor"):
 		$submenu/panel/hbox/host_game.visible = true
-		$submenu/panel/hbox/ip_address.visible = true
 
 	for i in range(len(models)):
 		$menu/center/panel/style.add_item(models[i][0], i)
@@ -216,13 +221,13 @@ func show_dm_buttons():
 	$MapControls.show()
 
 func host_game():
-	network.create_server()
+	Network.create_server()
 	hide_connection_buttons()
 	show_game_buttons()
 	show_dm_buttons()
 
 func connect_to_game():
-	network.connect_to_server($submenu/panel/hbox/ip_address.text)
+	Network.connect_to_server($submenu/panel/hbox/ip_address.text)
 	hide_connection_buttons()
 	show_game_buttons()
 
@@ -776,6 +781,17 @@ remotesync func load_room(room_objects):
 	# print("loading_room")
 	for grid_object in room_objects:
 		$gridmap.set_cell_item (grid_object[0], grid_object[1], grid_object[2], grid_object[3], tile_rotations[grid_object[4]])
+
+
+func _on_Network_player_connected():
+	print("player_connected")
+	if get_tree().is_network_server():
+		resend_shared_map()
+		resend_objects()
+
+
+func _on_Network_disconnected_from_dm():
+	print("disconnected_from_dm")
 
 
 func _on_panel_mouse_entered():

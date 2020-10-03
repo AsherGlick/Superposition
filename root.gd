@@ -192,47 +192,16 @@ func _ready():
 	if Network.connect("disconnected_from_dm", self, "_on_Network_disconnected_from_dm") != OK:
 		print("Failed to connect \"disconnected_from_dm\"")
 
-	if OS.has_feature("dungeon_master") or OS.has_feature("editor"):
-		$submenu/panel/hbox/host_game.visible = true
-
 	for i in range(len(models)):
 		$menu/center/panel/style.add_item(models[i][0], i)
 
+	if get_tree().is_network_server():
+		$submenu/panel/hbox/share.show()
+		$submenu/panel/hbox/unhide.show()
+		$MapControls.show()
 
-func hide_connection_buttons():
-	$submenu/panel/hbox/host_game.hide()
-	$submenu/panel/hbox/join_game.hide()
-	$submenu/panel/hbox/ip_address.hide()
-
-func show_game_buttons():
-	$submenu/panel/hbox/circle.show()
-	$submenu/panel/hbox/square.show()
-	$submenu/panel/hbox/ping.show()
-	$submenu/panel/hbox/make_object.show()
-	$submenu/panel/hbox/delete.show()
-	$submenu/panel/hbox/uplevel.show()
-	$submenu/panel/hbox/downlevel.show()
-	$submenu/panel/hbox/floor.show()
-	$submenu/panel/hbox/walls.show()
-
-func show_dm_buttons():
-	$submenu/panel/hbox/share.show()
-	$submenu/panel/hbox/unhide.show()
-	$MapControls.show()
-
-func host_game():
-	Network.create_server()
-	hide_connection_buttons()
-	show_game_buttons()
-	show_dm_buttons()
-
-func connect_to_game():
-	Network.connect_to_server($submenu/panel/hbox/ip_address.text)
-	hide_connection_buttons()
-	show_game_buttons()
 
 func _process(delta):
-
 	if !get_tree().has_network_peer():
 		return
 
@@ -809,15 +778,6 @@ func _on_panel_mouse_exited():
 func _on_delete_pressed():
 	selected_object.delete()
 	redraw_gridmap_tiles()
-
-
-func _on_host_game_pressed():
-	_on_panel_mouse_exited()
-	host_game()
-
-func _on_join_game_pressed():
-	_on_panel_mouse_exited()
-	connect_to_game()
 
 
 func _on_make_object_pressed():

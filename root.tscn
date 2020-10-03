@@ -49,40 +49,8 @@ __meta__ = {
 "_edit_use_anchors_": false
 }
 
-[node name="host_game" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_right = 510.0
-margin_bottom = 48.0
-mouse_filter = 1
-size_flags_horizontal = 3
-text = "Become a DM"
-
-[node name="join_game" type="Button" parent="submenu/panel/hbox"]
-margin_right = 1024.0
-margin_bottom = 48.0
-mouse_filter = 1
-size_flags_horizontal = 3
-text = "Join A DM"
-__meta__ = {
-"_edit_use_anchors_": false
-}
-
-[node name="ip_address" type="LineEdit" parent="submenu/panel/hbox"]
-margin_left = 684.0
-margin_right = 1024.0
-margin_bottom = 48.0
-mouse_filter = 1
-size_flags_horizontal = 3
-text = "server.demetermine.com"
-align = 1
-__meta__ = {
-"_edit_use_anchors_": false
-}
-
 [node name="circle" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 438.0
-margin_right = 580.0
+margin_right = 118.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -92,9 +60,8 @@ __meta__ = {
 }
 
 [node name="square" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 615.0
-margin_right = 816.0
+margin_left = 122.0
+margin_right = 241.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -104,9 +71,8 @@ __meta__ = {
 }
 
 [node name="make_object" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 771.0
-margin_right = 1024.0
+margin_left = 245.0
+margin_right = 363.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -116,9 +82,8 @@ __meta__ = {
 }
 
 [node name="delete" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 855.0
-margin_right = 1024.0
+margin_left = 367.0
+margin_right = 486.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -129,9 +94,8 @@ __meta__ = {
 }
 
 [node name="ping" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 771.0
-margin_right = 1024.0
+margin_left = 490.0
+margin_right = 608.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -142,9 +106,8 @@ __meta__ = {
 }
 
 [node name="walls" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 912.0
-margin_right = 1024.0
+margin_left = 612.0
+margin_right = 731.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -156,9 +119,8 @@ __meta__ = {
 }
 
 [node name="uplevel" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 876.0
-margin_right = 1024.0
+margin_left = 735.0
+margin_right = 853.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -168,9 +130,8 @@ __meta__ = {
 }
 
 [node name="downlevel" type="Button" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 896.0
-margin_right = 1024.0
+margin_left = 857.0
+margin_right = 976.0
 margin_bottom = 48.0
 mouse_filter = 1
 size_flags_horizontal = 3
@@ -180,10 +141,9 @@ __meta__ = {
 }
 
 [node name="floor" type="Label" parent="submenu/panel/hbox"]
-visible = false
-margin_left = 864.0
+margin_left = 980.0
 margin_top = 17.0
-margin_right = 908.0
+margin_right = 1024.0
 margin_bottom = 31.0
 mouse_filter = 1
 text = "Floor 1"
@@ -193,7 +153,7 @@ __meta__ = {
 
 [node name="share" type="Button" parent="submenu/panel/hbox"]
 visible = false
-margin_left = 930.0
+margin_left = 919.0
 margin_right = 1024.0
 margin_bottom = 48.0
 mouse_filter = 1
@@ -205,7 +165,7 @@ __meta__ = {
 
 [node name="unhide" type="Button" parent="submenu/panel/hbox"]
 visible = false
-margin_left = 912.0
+margin_left = 930.0
 margin_right = 1024.0
 margin_bottom = 48.0
 mouse_filter = 1
@@ -404,8 +364,6 @@ shadow_enabled = true
 script = ExtResource( 1 )
 [connection signal="mouse_entered" from="submenu/panel" to="." method="_on_panel_mouse_entered"]
 [connection signal="mouse_exited" from="submenu/panel" to="." method="_on_panel_mouse_exited"]
-[connection signal="pressed" from="submenu/panel/hbox/host_game" to="." method="_on_host_game_pressed"]
-[connection signal="pressed" from="submenu/panel/hbox/join_game" to="." method="_on_join_game_pressed"]
 [connection signal="pressed" from="submenu/panel/hbox/circle" to="." method="_on_circle_pressed"]
 [connection signal="pressed" from="submenu/panel/hbox/square" to="." method="_on_square_pressed"]
 [connection signal="pressed" from="submenu/panel/hbox/make_object" to="." method="_on_make_object_pressed"]

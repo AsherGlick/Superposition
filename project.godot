@@ -16,7 +16,7 @@ _global_script_class_icons={
 [application]
 
 config/name="Superposition"
-run/main_scene="res://root.tscn"
+run/main_scene="res://main_menu.tscn"
 config/icon="res://icon.png"
 
 [autoload]

@@ -885,27 +885,95 @@ func load_room_from_file(filename):
 				# Rotate start tiles
 				################################################################
 				if full_sparse_map[z][y][x].tile_type == "start":
-					var up_tile = sparse_map_lookup(full_sparse_map, x, y+1, z)
-					var down_tile = sparse_map_lookup(full_sparse_map, x, y-1, z)
-					var left_tile = sparse_map_lookup(full_sparse_map, x+1, y, z)
-					var right_tile = sparse_map_lookup(full_sparse_map, x-1, y, z)
-
-					if up_tile != null && up_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 2
-
-					if down_tile != null && down_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 3
-
-					if left_tile != null && left_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 1
-
-					if right_tile != null && right_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 0
-
+					full_sparse_map[z][y][x].rotation = get_start_tile_rotation(x,y,z)
 
 	# Reveal the first room
 	# print(rooms[sparse_map_lookup(full_sparse_map,0,0,0).rooms[0]])
 	share_room(sparse_map_lookup(full_sparse_map,0,0,0).rooms[0])
+
+func is_floorlike_tile(tile) -> bool:
+	if tile == null:
+		return false
+
+	var floorlike_tiles = [
+		"floor",
+		"door",
+		"door-diag",
+		"door-cross",
+		"stairsup",
+		"stairsdown",
+		"start",
+	]
+
+	if tile.tile_type in floorlike_tiles:
+		return true
+
+	# If the hidden door is revealed then it is a floorlike tile
+	# We should decide if tiles should change rotation/type when surrounding
+	# tiles are unhidden. Definitely walls should be removed.
+	#if tile.tile_type == "hiddendoor" && tile.hidden == false:
+	#	return true
+
+	return false
+
+func get_start_tile_rotation(x: int, y: int, z: int) -> int:
+	var tile_weights = [1, 10, 1, -100]
+
+	var side_mapping = [
+		[2, 3, 4, 7], # Facing East
+		[6, 7, 0, 3], # Facing West
+		[0, 1, 2, 5], # Facing North
+		[4, 5, 6, 1], # Facing South
+	]
+
+	var tiebreakers = {
+		"[0, 1]": 1, # (North/East) -> East
+		"[1, 2]": 2, # (East/South) -> South
+		"[2, 3]": 3, # (South/West) -> West
+		"[0, 3]": 0, # (North/West) -> North
+		"[0, 2]": 0, # (North/South) -> North
+		"[1, 3]": 1, # (East/West) -> East
+		"[0, 1, 2, 3]": 0, # (All-Way Tie) North
+	}
+
+	var case = [
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x+1, y+1, z)), # NW
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x,   y+1, z)), # N
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x-1, y+1, z)), # NE
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x-1, y,   z)), # E
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x-1, y-1, z)), # SE
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x,   y-1, z)), # S
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x+1, y-1, z)), # SW
+		is_floorlike_tile(sparse_map_lookup(full_sparse_map, x+1, y,   z)), # W
+	]
+
+	# print("Case:", case)
+	var side_weights = []
+	for side_index in range(4):
+		var side_weight = 0
+		for tile_index in range(4):
+			var tile = case[side_mapping[side_index][tile_index]]
+			if tile == true:
+				side_weight += tile_weights[tile_index]
+		side_weights.append(side_weight)
+
+	var max_weight = side_weights[0]
+	var tied_sides = []
+
+	for side_index in range(4):
+
+		if side_weights[side_index] > max_weight:
+			max_weight = side_weights[side_index]
+			tied_sides = [side_index]
+
+		elif side_weights[side_index] == max_weight:
+			tied_sides.append(side_index)
+
+	var winning_side = tied_sides[0]
+	if len(tied_sides) > 1:
+		winning_side = tiebreakers[str(tied_sides)]
+
+	return winning_side
 
 
 func build_room(start_x: int, start_y:int , start_z:int, sparsemap, room):

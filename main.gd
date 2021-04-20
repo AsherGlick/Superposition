@@ -16,6 +16,8 @@ const speed: float = 10.0
 const tile_types = {
 	"floor": 0,
 	"door": 1,
+	"door-diag": 10,
+	"door-cross": 11,
 	"hiddendoor": 1,
 	"stairsup": 7,
 	"stairsdown": 6,
@@ -713,64 +715,6 @@ func load_room_from_file(filename):
 				else:
 					print("Found an unknown character at ", tx, ",", ty,",",tz,"[",raw_tiles[tz][ty][tx],"]")
 
-	# Populate Rotations
-	for z in full_sparse_map:
-		for y in full_sparse_map[z]:
-			for x in full_sparse_map[z][y]:
-				if full_sparse_map[z][y][x].tile_type == "door" || full_sparse_map[z][y][x].tile_type == "hiddendoor":
-					var up_tile = sparse_map_lookup(full_sparse_map, x, y+1, z)
-					var down_tile = sparse_map_lookup(full_sparse_map, x, y-1, z)
-					var left_tile = sparse_map_lookup(full_sparse_map, x+1, y, z)
-					var right_tile = sparse_map_lookup(full_sparse_map, x-1, y, z)
-
-					if up_tile != null && up_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 3
-
-					if down_tile != null && down_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 2
-
-					if left_tile != null && left_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 0
-
-					if right_tile != null && right_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 1
-
-				if full_sparse_map[z][y][x].tile_type == "stairsup" || full_sparse_map[z][y][x].tile_type == "stairsdown":
-					var up_tile = sparse_map_lookup(full_sparse_map, x, y+1, z)
-					var down_tile = sparse_map_lookup(full_sparse_map, x, y-1, z)
-					var left_tile = sparse_map_lookup(full_sparse_map, x+1, y, z)
-					var right_tile = sparse_map_lookup(full_sparse_map, x-1, y, z)
-
-					if up_tile != null && up_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 3
-
-					if down_tile != null && down_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 2
-
-					if left_tile != null && left_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 0
-
-					if right_tile != null && right_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 1
-
-				if full_sparse_map[z][y][x].tile_type == "start":
-					var up_tile = sparse_map_lookup(full_sparse_map, x, y+1, z)
-					var down_tile = sparse_map_lookup(full_sparse_map, x, y-1, z)
-					var left_tile = sparse_map_lookup(full_sparse_map, x+1, y, z)
-					var right_tile = sparse_map_lookup(full_sparse_map, x-1, y, z)
-
-					if up_tile != null && up_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 2
-
-					if down_tile != null && down_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 3
-
-					if left_tile != null && left_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 1
-
-					if right_tile != null && right_tile.tile_type == "floor":
-						full_sparse_map[z][y][x].rotation = 0
-
 	# Assemble all of the tiles into rooms
 	while len(possible_rooms) > 0:
 		var built_room = build_room(
@@ -823,6 +767,142 @@ func load_room_from_file(filename):
 			for x in wall_sparsemap[z][y]:
 				sparse_map_insert(full_sparse_map, x, y, z, wall_sparsemap[z][y][x])
 	
+
+	# Populate Rotations
+	for z in full_sparse_map:
+		for y in full_sparse_map[z]:
+			for x in full_sparse_map[z][y]:
+				################################################################
+				# Rotate and Position Doors
+				################################################################
+				if full_sparse_map[z][y][x].tile_type == "door" || full_sparse_map[z][y][x].tile_type == "hiddendoor":
+					# Build the hashkey based on orthogonal tiles
+					var up_tile = sparse_map_lookup(full_sparse_map, x, y+1, z)
+					var down_tile = sparse_map_lookup(full_sparse_map, x, y-1, z)
+					var left_tile = sparse_map_lookup(full_sparse_map, x+1, y, z)
+					var right_tile = sparse_map_lookup(full_sparse_map, x-1, y, z)
+					var tiles = [up_tile, right_tile, down_tile, left_tile]
+					var case_array = []
+					var room_count = 0
+					var temp_room_index_mapping = {}
+					for tile in tiles:
+						if tile != null && tile.tile_type == "floor":
+							var found_room_match = false
+							for room in tile.rooms:
+								if room in temp_room_index_mapping:
+									case_array.append(temp_room_index_mapping[room])
+									found_room_match = true
+									break
+							if !found_room_match:
+								room_count += 1
+								case_array.append(room_count)
+								for room in tile.rooms:
+									temp_room_index_mapping[room] = room_count
+						else:
+							case_array.append(0)
+
+					var case = str(case_array[0]) + str(case_array[1]) + str(case_array[2]) + str(case_array[3]) 
+					print(case)
+					var cases = {
+						"0000": ["door", 2],
+						"0001": ["door", 0],
+						"0010": ["door", 2],
+						"0011": ["door-diag", 0],
+						"0012": ["door-diag", 2],
+						"0100": ["door", 0],
+						"0101": ["door", 0],
+						"0102": ["door", 0],
+						"0110": ["door-diag", 2],
+						"0111": ["door-cross", 0],
+						"0112": ["door-diag", 2],
+						"0120": ["door-diag", 0],
+						"0121": ["door-cross", 0],
+						"0122": ["door-diag", 0],
+						"0123": ["door-cross", 0],
+						"1000": ["door", 2],
+						"1001": ["door-diag", 2],
+						"1002": ["door-diag", 0],
+						"1010": ["door", 2],
+						"1011": ["door-cross", 0],
+						"1012": ["door-cross", 0],
+						"1020": ["door", 2],
+						"1021": ["door-diag", 2],
+						"1022": ["door-diag", 0],
+						"1023": ["door-cross", 0],
+						"1100": ["door-diag", 0],
+						"1101": ["door-cross", 0],
+						"1102": ["door-diag", 0],
+						"1110": ["door-cross", 0],
+						"1111": ["door-cross", 0],
+						"1112": ["door-cross", 0],
+						"1120": ["door-diag", 0],
+						"1121": ["door-cross", 0],
+						"1122": ["door-diag", 0],
+						"1123": ["door-cross", 0],
+						"1200": ["door-diag", 2],
+						"1201": ["door-diag", 2],
+						"1202": ["door-cross", 0],
+						"1203": ["door-cross", 0],
+						"1210": ["door-cross", 0],
+						"1211": ["door-cross", 0],
+						"1213": ["door-cross", 0],
+						"1220": ["door-diag", 2],
+						"1221": ["door-diag", 2],
+						"1222": ["door-cross", 0],
+						"1223": ["door-cross", 0],
+						"1230": ["door-cross", 0],
+						"1231": ["door-cross", 0],
+						"1232": ["door-cross", 0],
+						"1233": ["door-cross", 0],
+						"1234": ["door-cross", 0],
+					}
+
+					full_sparse_map[z][y][x].tile_type = cases[case][0]
+					full_sparse_map[z][y][x].rotation = cases[case][1]
+
+				################################################################
+				# Rotate stairs
+				################################################################
+				if full_sparse_map[z][y][x].tile_type == "stairsup" || full_sparse_map[z][y][x].tile_type == "stairsdown":
+					var up_tile = sparse_map_lookup(full_sparse_map, x, y+1, z)
+					var down_tile = sparse_map_lookup(full_sparse_map, x, y-1, z)
+					var left_tile = sparse_map_lookup(full_sparse_map, x+1, y, z)
+					var right_tile = sparse_map_lookup(full_sparse_map, x-1, y, z)
+
+					if up_tile != null && up_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 3
+
+					if down_tile != null && down_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 2
+
+					if left_tile != null && left_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 0
+
+					if right_tile != null && right_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 1
+
+				################################################################
+				# Rotate start tiles
+				################################################################
+				if full_sparse_map[z][y][x].tile_type == "start":
+					var up_tile = sparse_map_lookup(full_sparse_map, x, y+1, z)
+					var down_tile = sparse_map_lookup(full_sparse_map, x, y-1, z)
+					var left_tile = sparse_map_lookup(full_sparse_map, x+1, y, z)
+					var right_tile = sparse_map_lookup(full_sparse_map, x-1, y, z)
+
+					if up_tile != null && up_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 2
+
+					if down_tile != null && down_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 3
+
+					if left_tile != null && left_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 1
+
+					if right_tile != null && right_tile.tile_type == "floor":
+						full_sparse_map[z][y][x].rotation = 0
+
+
 	# Reveal the first room
 	# print(rooms[sparse_map_lookup(full_sparse_map,0,0,0).rooms[0]])
 	share_room(sparse_map_lookup(full_sparse_map,0,0,0).rooms[0])

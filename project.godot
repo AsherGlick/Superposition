@@ -9,12 +9,24 @@
 config_version=4
 
 _global_script_classes=[ {
+"base": "Spatial",
+"class": "Main",
+"language": "GDScript",
+"path": "res://main.gd"
+}, {
+"base": "Piece",
+"class": "Mini",
+"language": "GDScript",
+"path": "res://mini.gd"
+}, {
 "base": "StaticBody",
 "class": "Piece",
 "language": "GDScript",
 "path": "res://piece.gd"
 } ]
 _global_script_class_icons={
+"Main": "",
+"Mini": "",
 "Piece": ""
 }
 
@@ -70,11 +82,11 @@ limits/websocket_server/max_out_buffer_kb=2048
 
 [rendering]
 
-quality/filters/anisotropic_filter_level=1
 quality/directional_shadow/size=1024
 quality/directional_shadow/size.mobile=512
 quality/shadow_atlas/size=1024
 quality/shadow_atlas/size.mobile=512
 quality/reflections/texture_array_reflections=false
 quality/reflections/high_quality_ggx=false
+quality/filters/anisotropic_filter_level=1
 environment/default_environment="res://default_env.tres"

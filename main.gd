@@ -1,3 +1,4 @@
+class_name Main
 extends Spatial
 
 
@@ -27,7 +28,8 @@ const DRAW_WIDTH: float = 0.5
 
 var right_mouse_button_pressed: bool = false
 var left_click_action: int = LeftClickAction.SELECT
-var selected_object: Piece = null
+var selected_piece: Piece = null
+var return_selected_to_saved_position: bool = false
 var draw_material: SpatialMaterial = SpatialMaterial.new()
 
 var is_popup_showing := false
@@ -62,6 +64,7 @@ const ping_scene = preload("res://ping.tscn")
 const mini_scene = preload("res://mini.tscn")
 const circle_aoe_scene = preload("res://circle_aoe.tscn")
 const rectangle_aoe_scene = preload("res://rectangle_aoe.tscn")
+
 
 func _ready():
 	if Network.connect('player_connected', self, '_on_Network_player_connected') != OK:
@@ -106,23 +109,25 @@ func _unhandled_input(event):
 						var result = space_state.intersect_ray(start_coordinate, end_coordinate)
 						if result:
 							if result.collider.has_method("set_selected"):
-								select_object(result.collider)
+								select_piece(result.collider)
 								change_left_click_action(LeftClickAction.MOVE_SELECTED)
 					LeftClickAction.MOVE_SELECTED:
 #						print("executing LeftClickAction.MOVE_SELECTED")
-						assert(selected_object != null)
+						assert(selected_piece != null)
 						if floor_target != null:
 							var local_snap_mode: int = get_snap_mode_if_auto()
-							var snapped_target: Vector3 = compute_snap_position(floor_target, local_snap_mode)
-							selected_object.move_to(snapped_target, current_floor)
+							var snapped_position: Vector3 = compute_snap_position(floor_target, local_snap_mode)
+							selected_piece.move_to_remote(snapped_position, current_floor)
+							return_selected_to_saved_position = false
 							change_left_click_action(LeftClickAction.SELECT)
+							redraw_gridmap_tiles()
 					LeftClickAction.ROTATE_SELECTED:
 #						print("executing LeftClickAction.ROTATE_SELECTED")
-						assert(selected_object != null)
+						assert(selected_piece != null)
 						if floor_target != null:
-							var selected_position := selected_object.global_transform.origin
+							var selected_position := selected_piece.global_transform.origin
 							var target_direction: Vector3 = floor_target - selected_position
-							selected_object.rotate_to(compute_snap_direction(target_direction))
+							selected_piece.rotate_to(compute_snap_direction(target_direction))
 							change_left_click_action(LeftClickAction.SELECT)
 					LeftClickAction.PING:
 #						print("executing LeftClickAction.PING")
@@ -197,18 +202,21 @@ func _process(delta):
 
 	match left_click_action:
 		LeftClickAction.MOVE_SELECTED:
-			assert(selected_object != null)
+			assert(selected_piece != null)
+			var local_snap_mode: int = get_snap_mode_if_auto()
 			var mouse_floor_intersection = get_mouse_floor_intersection(get_viewport().get_mouse_position())
 			if mouse_floor_intersection != null:
-				var local_snap_mode: int = get_snap_mode_if_auto()
 				var snapped_position: Vector3 = compute_snap_position(mouse_floor_intersection, local_snap_mode)
-				draw_snap_position(snapped_position, local_snap_mode)
+				selected_piece.set_location_local(snapped_position, current_floor)
+			else:
+				selected_piece.return_to_saved_position()
+			draw_snap_position(selected_piece.saved_position, local_snap_mode)
 		LeftClickAction.ROTATE_SELECTED:
-			assert(selected_object != null)
+			assert(selected_piece != null)
 			var mouse_floor_intersection = get_mouse_floor_intersection(get_viewport().get_mouse_position())
 			if mouse_floor_intersection != null:
-				var selected_position = selected_object.global_transform.origin
-				var selected_direction = selected_object.global_transform.basis.z
+				var selected_position = selected_piece.global_transform.origin
+				var selected_direction = selected_piece.global_transform.basis.z
 				var target_direction: Vector3 = mouse_floor_intersection - selected_position
 				var snap_direction := compute_snap_direction(target_direction)
 
@@ -239,20 +247,22 @@ func change_left_click_action(new_action: int) -> void:
 #			print("exiting LeftClickAction.SELECT")
 		LeftClickAction.MOVE_SELECTED:
 #			print("exiting LeftClickAction.MOVE_SELECTED")
-			if new_action != LeftClickAction.ROTATE_SELECTED:
-				deselect_object()
+			if return_selected_to_saved_position:
+				selected_piece.return_to_saved_position()
 			var draw_node = get_node("Draw")
 			draw_node.set_material_override(draw_material)
 			draw_node.clear()
 			draw_node.end()
+			if new_action != LeftClickAction.ROTATE_SELECTED:
+				deselect_piece()
 		LeftClickAction.ROTATE_SELECTED:
 #			print("exiting LeftClickAction.ROTATE_SELECTED")
-			if new_action != LeftClickAction.MOVE_SELECTED:
-				deselect_object()
 			var draw_node = get_node("Draw")
 			draw_node.set_material_override(draw_material)
 			draw_node.clear()
 			draw_node.end()
+			if new_action != LeftClickAction.MOVE_SELECTED:
+				deselect_piece()
 		LeftClickAction.PING:
 #			print("exiting LeftClickAction.PING")
 			$GameMenu.set_ping_pressed(false)
@@ -261,11 +271,13 @@ func change_left_click_action(new_action: int) -> void:
 	left_click_action = new_action
 
 	# Run logic when entering the new action
-#	match left_click_action:
+	match left_click_action:
 #		LeftClickAction.SELECT:
 #			print("entering LeftClickAction.SELECT")
-#		LeftClickAction.MOVE_SELECTED:
+		LeftClickAction.MOVE_SELECTED:
 #			print("entering LeftClickAction.MOVE_SELECTED")
+			selected_piece.save_current_position()
+			return_selected_to_saved_position = true
 #		LeftClickAction.ROTATE_SELECTED:
 #			print("entering LeftClickAction.ROTATE_SELECTED")
 #		LeftClickAction.PING:
@@ -284,7 +296,7 @@ func cycle_movement_action() -> void:
 
 func get_snap_mode_if_auto():
 	if Snap.move_mode == Snap.MoveMode.AUTO:
-		return get_auto_snap_mode(selected_object.tile_size_x, selected_object.tile_size_z)
+		return get_auto_snap_mode(selected_piece.tile_size_x, selected_piece.tile_size_z)
 	return Snap.move_mode
 
 
@@ -392,15 +404,15 @@ func compute_snap_direction(direction: Vector3) -> Vector3:
 	return snap_direction
 
 
-func select_object(object):
-	object.set_selected()
-	selected_object = object
+func select_piece(piece: Piece) -> void:
+	piece.set_selected()
+	selected_piece = piece
 	$GameMenu.set_selected(true)
 
 
-func deselect_object():
-	selected_object.set_deselected()
-	selected_object = null
+func deselect_piece() -> void:
+	selected_piece.set_deselected()
+	selected_piece = null
 	$GameMenu.set_selected(false)
 
 
@@ -424,6 +436,22 @@ func get_mouse_floor_intersection(screen_position, height = 0):
 		print("Caught a div by zero in tile lookup")
 
 	return null
+
+
+func get_tile_at_location(position: Vector3, target_floor: int):
+	var tile_x := floor(position.x / 2.0)
+	var tile_y := floor(position.z / 2.0)
+	return sparse_map_lookup(shared_sparse_map, tile_x, tile_y, target_floor)
+
+
+func get_height_multiplier_at_location(position: Vector3, target_floor: int) -> float:
+	var tile = get_tile_at_location(position, target_floor)
+	if tile != null:
+		if tile.tile_type == "stairsup":
+			return 1.0
+		if tile.tile_type == "stairsdown":
+			return -1.0
+	return 0.0
 
 
 remotesync func ping_NETWORK(position):
@@ -1339,11 +1367,11 @@ func _on_GameMenu_create_rectangle(name: String, color: Color, x: int, z: int):
 
 
 func _on_GameMenu_delete():
-	var to_delete = selected_object
+	var to_delete = selected_piece
 	change_left_click_action(LeftClickAction.SELECT)
 	to_delete.delete()
 	redraw_gridmap_tiles()
-	assert(selected_object == null)
+	assert(selected_piece == null)
 
 
 func _on_GameMenu_toggle_ping(is_enabled):

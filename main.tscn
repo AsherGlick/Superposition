@@ -74,6 +74,7 @@ shadow_enabled = true
 script = ExtResource( 1 )
 
 [node name="Draw" type="ImmediateGeometry" parent="."]
+
 [connection signal="start_game" from="MainMenu" to="." method="_on_MainMenu_start_game"]
 [connection signal="create_circle" from="GameMenu" to="." method="_on_GameMenu_create_circle"]
 [connection signal="create_line" from="GameMenu" to="." method="_on_GameMenu_create_line"]
